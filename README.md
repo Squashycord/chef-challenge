@@ -55,7 +55,8 @@ result = {
 All of the payload protection code can be found in the produce_protected_payload() function in chef.py
 
 ## Fingerprints
-Fingerprints aren't dynamic or validated. 
+Fingerprints aren't dynamic or validated.
+
 The fingerprint is sent to the /submit api in a protected payload (read more above)
 
 Example fingerprint:
