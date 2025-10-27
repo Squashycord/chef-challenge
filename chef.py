@@ -197,7 +197,7 @@ async def main(challenge_token, symbolEntry):
     print(json.dumps(result, indent=2))
     return result
 
-async def chef(session, csrf, user_agent, accept_language, cookies, rblx_challenge_id, identifiers, user_id, payloads): # uses curl cffi session
+async def chef(session, csrf, user_agent, accept_language, cookies, rblx_challenge_id, identifiers, user_id, btid): # uses curl cffi session
     # user id is the currently authenticated account that you are making changes to
     headers = {
         'User-Agent': user_agent,
@@ -217,8 +217,9 @@ async def chef(session, csrf, user_agent, accept_language, cookies, rblx_challen
     data = response.text # base64 encoded javascript challenge
     data = base64.b64decode(response.text).decode()
     payload_token1 = re.search(r'produceProtectedPayload\s*\(\s*"([^"]+)"', data).group(1) # string in the javascript used to generate the protected payload
-    print("payload_token1:" + payload_token1)
-    solved = await main(payload_token1, payloads[0]) # generate protected payload
+
+    expectedSymbol1 = re.search(r'expectedSymbol="([^"]+)"', data).group(1) # roblox changed where the expectedSymbol is found when they updated, this is the updated location
+    solved = await main(payload_token1, expectedSymbol1) # generate protected payload
 
     key = solved.get("data")
     iv = solved.get("ivBase64Enc")
@@ -228,8 +229,10 @@ async def chef(session, csrf, user_agent, accept_language, cookies, rblx_challen
     data = response.text # base64 encoded javascript challenge
     data = base64.b64decode(response.text).decode()
     payload_token2 = re.search(r'produceProtectedPayload\s*\(\s*"([^"]+)"', data).group(1) # string in the javascript used to generate the protected payload, again!
-    print("payload_token2:" + payload_token2)
-    solved2 = await main(payload_token2, payloads[1]) # generate protected payload
+
+    expectedSymbol2 = re.search(r'expectedSymbol="([^"]+)"', data).group(1) # roblox changed where the expectedSymbol is found when they updated, this is the updated location
+
+    solved2 = await main(payload_token2, expectedSymbol2) # generate protected payload
 
     key2 = solved2.get("data")
     iv2 = solved2.get("ivBase64Enc")
@@ -254,16 +257,16 @@ async def chef(session, csrf, user_agent, accept_language, cookies, rblx_challen
     payload = {
         "userId": str(user_id),
         "challengeId": rblx_challenge_id,
-        "payload": payloads[0], # in challenge metadata expectedSymbols, 0th index is for first submit request 1st index for 2nd submit request
+        #"payload": payloads[0], # (outdated) -> in challenge metadata expectedSymbols, 0th index is for first submit request 1st index for 2nd submit request <---- ALL OF THIS INFORMATION IS OUTDATED, "payload" is no longer sent in this request
         "payloadV2": payloadv2,  # solved in chef js challenge
         "params": { # solved in chef js challenge all below
             "key": key,
             "iv": iv
-        }
+        },
+        "btid": str(btid)  # time when the RBXEventTrackerV2 cookie was given from roblox, in unix microseconds
     }
-    print(payload)
     response = await session.post('https://apis.roblox.com/rotating-client-service/v1/submit', headers=headers, json=payload)
-
+    print(f"Solved first part of chef challenge|ExpectedSymbol = {expectedSymbol1}|PayloadToken = {payload_token1}\n")
     headers = {
         'User-Agent': user_agent,
         'Accept': '*/*',
@@ -285,13 +288,14 @@ async def chef(session, csrf, user_agent, accept_language, cookies, rblx_challen
     payload = {
         "userId": str(user_id),
         "challengeId": rblx_challenge_id,
-        "payload": payloads[1], # in challenge metadata expectedSymbols, 0th index is for first submit request 1st index for 2nd submit request
+        #"payload": payloads[1], # (outdated) in challenge metadata expectedSymbols, 0th index is for first submit request 1st index for 2nd submit request <---- ALL OF THIS INFORMATION IS OUTDATED, "payload" is no longer sent in this request 
         "payloadV2": payloadv22,  # solved in chef js challenge
         "params": { # solved in chef js challenge all below
             "key": key2,
             "iv": iv2
-        }
+        },
+        "btid": str(btid)  # time when the RBXEventTrackerV2 cookie was given from roblox, in unix microseconds
     }
-    print(payload)
 
     response = await session.post('https://apis.roblox.com/rotating-client-service/v1/submit', headers=headers, json=payload)
+    print(f"Solved second part of chef challenge|ExpectedSymbol = {expectedSymbol2}|PayloadToken = {payload_token2}\n")
