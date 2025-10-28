@@ -11,7 +11,16 @@ Roblox challenge ID: In the request that roblox initializes the chef challenge, 
 
 identifiers: In the request that roblox initializes the chef challenge, roblox returns the base64 encoded header "rblx-challenge-metadata". After decoding the value, the identifiers are in the "scriptIdentifiers" key in the json object.
 
-payloads (expectedSymbols): In the request that roblox initializes the chef challenge, roblox returns the base64 encoded header "rblx-challenge-metadata". After decoding the value, the identifiers are in the "expectedSymbols" key in the json object.
+btid: The time that the RBXEventTrackerV2 cookie was given to the client in unix microseconds (no decimals) as a str, if no RBXEventTrackerV2 cookie is present btid is sent as "0" (str), this field is optional as of writing, I expect roblox to start enforcing it.
+
+~~payloads~~ expectedSymbols: In the challenge JS, (https://apis.roblox.com/rotating-client-service/v1/fetch? ..) it defines a expectedSymbol variable with the expectedSymbol string as the value. The regex to find the expectedSymbol is below. (No longer sent in the "payloads" field due to roblox updating.)
+```
+re.search(r'expectedSymbol="([^"]+)"', data).group(1)
+```
+Challenge JS code where expectedSymbol is found:
+```
+const expectedSymbol="SvxpVIo";
+```
 
 challenge_token: In the challenge JS, (https://apis.roblox.com/rotating-client-service/v1/fetch? ..) it runs a produceProtectedPayload() function with the challenge_token as a paramater and totalPayloadToEncrypt as the second paramater. The regex to find the challenge token below.
 ```
