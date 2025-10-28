@@ -1,5 +1,7 @@
 Roblox's chef JS challenge is a challenge deployed when making 2FA changes to a roblox account, used for anti-bot and browser fingerprinting.
 
+![image](showoff.png) 
+
 ## Getting challenge information
 ```
 rblx_challenge_id = response.headers["rblx-challenge-id"]
